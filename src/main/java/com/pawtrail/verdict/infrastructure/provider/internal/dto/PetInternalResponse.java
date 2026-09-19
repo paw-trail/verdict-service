@@ -1,0 +1,33 @@
+package com.pawtrail.verdict.infrastructure.provider.internal.dto;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.pawtrail.verdict.domain.enums.BreedSize;
+import com.pawtrail.verdict.domain.model.PetProfile;
+
+import java.math.BigDecimal;
+import java.util.UUID;
+
+/**
+ * pet GET /internal/pets?ids= 응답의 원소입니다. 판정에 쓰는 칸만 받습니다.
+ *
+ * 이름 · 견종 · 종 · 접종 완료 여부는 받지 않습니다. 판정에 쓰지 않고, 화면이 GET /pets 로 이미 가집니다.
+ *
+ * @param isDangerousBreed 맹견인지. 이름을 JSON 키와 같게 적어 둡니다 — is 로 시작하는 불리언은 도구에 따라 키가 달라질 수 있음
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record PetInternalResponse(
+        UUID petId,
+        BigDecimal weightKg,
+        String breedSize,
+        boolean hasCarrier,
+        boolean hasStroller,
+        boolean vaccineProofAvailable,
+        @JsonProperty("isDangerousBreed") boolean isDangerousBreed
+) {
+
+    public PetProfile toProfile() {
+        return new PetProfile(petId, weightKg, EnumValues.of(BreedSize.class, breedSize),
+                hasCarrier, hasStroller, vaccineProofAvailable, isDangerousBreed);
+    }
+}
