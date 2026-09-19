@@ -163,6 +163,22 @@ class VerdictJudgeTest {
     }
 
     @Test
+    @DisplayName("맹견인지 모르면 제한 없음이 아닌 한 확인 필요 — 맹견 아님으로 넘기지 않음")
+    void 맹견인지_모르면_확인_필요() {
+        PetProfile unknown = new PetProfile(PET_ID, new BigDecimal("30"), BreedSize.LARGE, false, false, false, null);
+
+        PetJudgement banned = VerdictJudge.judge(PET_ID, unknown, place(open().breedRule(BreedRule.DANGEROUS_BANNED).build()));
+
+        assertThat(banned.verdict()).isEqualTo(Verdict.UNKNOWN);
+        assertThat(banned.reasons()).extracting(Reason::message)
+                .containsExactly("반려견의 맹견 여부 정보 없음 — 맹견 불가", "전 구역 동반 가능", "제한 없음");
+        assertThat(VerdictJudge.judge(PET_ID, unknown, place(open().build())).verdict())
+                .isEqualTo(Verdict.UNKNOWN);
+        assertThat(VerdictJudge.judge(PET_ID, unknown, place(open().breedRule(BreedRule.NONE).build())).verdict())
+                .isEqualTo(Verdict.ALLOWED);
+    }
+
+    @Test
     @DisplayName("이동장 필요 — 이동장이나 유모차가 있으면 조건부, 없으면 불가")
     void 이동장_필요() {
         PlaceConditions place = place(open().carrierRequired(true).build());

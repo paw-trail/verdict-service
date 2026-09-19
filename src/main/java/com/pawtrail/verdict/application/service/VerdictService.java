@@ -23,13 +23,17 @@ import java.util.UUID;
  *
  * <pre>
  * ① pet 에서 반려동물을 받음          GET /internal/pets?ids= 한 번
- * ② policy 에서 조건을 받음           POST /internal/policies/batch 한 번 · 받은 반려동물이 없으면 부르지 않음
+ * ② policy 에서 조건을 받음           POST /internal/policies/batch 한 번 · 물을 장소가 없을 때만 건너뜀
  * ③ 장소마다 · 마리마다 판정           VerdictJudge
  * ④ 장소 칸을 붙임                   충돌 여부 · 카드 한 줄 근거 · 준비물 · 정정 출처
  * </pre>
  *
  * <b>pet 과 policy 를 차례로 부릅니다.</b> 병렬로 부르면 다른 스레드에 사용자 정보가 안 넘어가 pet 이 401 을 냅니다.
  * 두 왕복이 정말 병목인지는 부하를 잰 뒤에 봅니다.
+ *
+ * <b>받은 반려동물이 하나도 없어도 policy 를 부릅니다.</b> 충돌 여부 · 정정 출처 · 준비물은 장소의 사실이라
+ * 반려동물과 상관없이 채워야 합니다. 대표 반려동물을 지운 뒤 없는 id 로 불려도 카드의 준비물이 남고,
+ * 그때 policy 가 죽어 있으면 "조건 없음" 이 아니라 POLICY_UNAVAILABLE 로 드러납니다.
  *
  * <b>캐시가 없습니다.</b> 부를 때마다 두 서비스에서 받아 새로 판정합니다. 캐시는 부하를 잰 뒤에 붙입니다.
  */
@@ -72,8 +76,7 @@ public class VerdictService {
 
     private Materials load(List<UUID> placeIds, List<UUID> petIds) {
         Map<UUID, PetProfile> pets = petProvider.findByIds(petIds);
-        // 받은 반려동물이 하나도 없으면 모든 판정이 "반려동물 없음" 이라 조건을 물을 까닭이 없음
-        Map<UUID, PlaceConditions> places = pets.isEmpty() ? Map.of() : policyProvider.findByPlaceIds(placeIds);
+        Map<UUID, PlaceConditions> places = policyProvider.findByPlaceIds(placeIds);
         return new Materials(pets, places);
     }
 

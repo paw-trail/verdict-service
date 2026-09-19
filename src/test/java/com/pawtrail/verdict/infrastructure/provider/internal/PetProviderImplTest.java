@@ -71,6 +71,16 @@ class PetProviderImplTest {
     }
 
     @Test
+    @DisplayName("맹견 여부 칸이 빠지면 맹견 아님이 아니라 모름(null)으로 둠")
+    void 맹견_여부가_빠지면_모름() {
+        String withoutFlag = pet("SMALL").replace(",\"isDangerousBreed\":true", "");
+        server.expect(requestTo("lb://pet-service/internal/pets?ids=" + DOG))
+                .andRespond(withSuccess(envelope("[" + withoutFlag + "]"), MediaType.APPLICATION_JSON));
+
+        assertThat(provider.findByIds(List.of(DOG)).get(DOG).dangerousBreed()).isNull();
+    }
+
+    @Test
     @DisplayName("물을 반려동물이 없으면 부르지 않음")
     void 비어_있으면_안_부름() {
         assertThat(provider.findByIds(List.of())).isEmpty();

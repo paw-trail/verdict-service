@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
  * 불가       범위 동반 불가 · 실내 · 실외 둘 다 불가 · 안내견 한정 · 크기 · 체중이 막음 · 맹견 불가(맹견일 때)
  *           이동장 필요인데 이동장 · 유모차가 없음 · 접종 증명 필요인데 증명서가 없음
  * 확인 필요   조건 정보 없음 · 동반 자체를 모름 · 크기 · 체중이 둘 다 빔 · 맹견 규칙이 빔(맹견일 때) · 반려동물 없음
+ *           · 맹견인지 모름(맹견 규칙이 제한 없음이 아닐 때)
  * 조건부     일부 구역 · 실내만 · 실외만 · 허용 구역 · 제외 구역 · 제외 요일 · 사전 문의
  *           · 이동장 필요(갖춤) · 접종 증명 필요(갖춤) · 맹견 입마개(맹견일 때)
  * 참고       반려견 동반 전용 · 마릿수 · 목줄 · 추가 요금 · 준비물 — 판정에 영향 없음
@@ -196,11 +197,20 @@ public final class VerdictJudge {
     }
 
     // 맹견 규칙은 맹견에만 걸림 — 맹견이 아니면 줄을 두지 않음
+    // 맹견인지 모르면(pet 응답에 칸이 없음) 제한 없음이 아닌 한 확인 필요 — 맹견 불가인지 입마개인지를 가를 수 없음
     private static void breed(Conditions conditions, PetProfile pet, Lines lines) {
-        if (!pet.dangerousBreed()) {
+        Boolean dangerous = pet.dangerousBreed();
+        if (Boolean.FALSE.equals(dangerous)) {
             return;
         }
         BreedRule rule = conditions.breedRule();
+        if (dangerous == null) {
+            if (rule != BreedRule.NONE) {
+                lines.add(ConditionField.BREED_RULE, ReasonStatus.MISSING,
+                        rule == null ? "반려견의 맹견 여부 정보 없음" : "반려견의 맹견 여부 정보 없음 — " + rule.text());
+            }
+            return;
+        }
         if (rule == null) {
             lines.add(ConditionField.BREED_RULE, ReasonStatus.MISSING, "맹견 동반 조건 정보 없음");
             return;

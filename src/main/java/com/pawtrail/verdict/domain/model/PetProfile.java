@@ -17,7 +17,8 @@ import java.util.UUID;
  * @param hasCarrier            이동장이 있는지
  * @param hasStroller           유모차가 있는지 — 이동장 필요 조건을 유모차로도 채움
  * @param vaccineProofAvailable 접종 증명서가 있는지
- * @param dangerousBreed        맹견인지
+ * @param dangerousBreed        맹견인지. null 이면 맹견인지 모름 — pet 응답에 칸이 없을 때
+ *                              false 로 채우면 맹견 규칙을 건너뛰어 "가능" 이 나갈 수 있어 null 로 둠
  */
 public record PetProfile(
         UUID petId,
@@ -26,6 +27,6 @@ public record PetProfile(
         boolean hasCarrier,
         boolean hasStroller,
         boolean vaccineProofAvailable,
-        boolean dangerousBreed
+        Boolean dangerousBreed
 ) {
 }

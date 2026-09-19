@@ -1,5 +1,6 @@
 package com.pawtrail.verdict.application.service;
 
+import com.pawtrail.common.exception.CustomException;
 import com.pawtrail.verdict.application.dto.output.PetVerdictDetail;
 import com.pawtrail.verdict.application.dto.output.PetVerdictValue;
 import com.pawtrail.verdict.application.dto.output.PlaceVerdictOutput;
@@ -11,6 +12,7 @@ import com.pawtrail.verdict.domain.enums.ReasonStatus;
 import com.pawtrail.verdict.domain.enums.Scope;
 import com.pawtrail.verdict.domain.enums.SizeRule;
 import com.pawtrail.verdict.domain.enums.Verdict;
+import com.pawtrail.verdict.domain.exception.VerdictErrorCode;
 import com.pawtrail.verdict.domain.model.Conditions;
 import com.pawtrail.verdict.domain.model.EvidenceLine;
 import com.pawtrail.verdict.domain.model.PetProfile;
@@ -28,6 +30,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 목록 판정과 상세 판정의 조립을 봅니다. pet · policy 는 가짜로 바꿔 끼웁니다.
@@ -82,17 +85,32 @@ class VerdictServiceTest {
     }
 
     @Test
-    @DisplayName("받은 반려동물이 없으면 policy 를 부르지 않고 모두 확인 필요")
-    void 반려동물이_없으면_policy_를_안_부름() {
-        PolicyProvider mustNotCall = ids -> {
-            throw new AssertionError("policy 를 부르면 안 됨");
+    @DisplayName("받은 반려동물이 없어도 장소 칸은 채움 — 충돌 여부 · 준비물은 장소의 사실")
+    void 반려동물이_없어도_장소_칸은_채움() {
+        PlaceConditions place = new PlaceConditions(PLACE,
+                Conditions.builder().scope(Scope.ALL_AREA).sizeRule(SizeRule.ALL)
+                        .leashRequired(true).requiredItems(List.of("배변봉투")).build(),
+                true, null, List.of());
+
+        PlaceVerdictSummary summary = new VerdictService(ids -> Map.of(), ids -> Map.of(PLACE, place))
+                .judgeBatch(List.of(PLACE), List.of(GONE)).results().get(0);
+
+        assertThat(summary.verdicts()).extracting(PetVerdictValue::verdict).containsExactly(Verdict.UNKNOWN);
+        assertThat(summary.hasConflict()).isEqualTo(true);
+        assertThat(summary.requiredItems()).containsExactly("목줄", "배변봉투");
+    }
+
+    @Test
+    @DisplayName("받은 반려동물이 없어도 policy 장애는 POLICY_UNAVAILABLE 로 드러남")
+    void 반려동물이_없어도_policy_장애는_드러남() {
+        PolicyProvider down = ids -> {
+            throw new CustomException(VerdictErrorCode.POLICY_UNAVAILABLE);
         };
+        VerdictService service = new VerdictService(ids -> Map.of(), down);
 
-        VerdictBatchOutput output = new VerdictService(ids -> Map.of(), mustNotCall)
-                .judgeBatch(List.of(PLACE), List.of(GONE));
-
-        assertThat(output.results().get(0).verdicts()).extracting(PetVerdictValue::verdict).containsExactly(Verdict.UNKNOWN);
-        assertThat(output.results().get(0).requiredItems()).isEmpty();
+        assertThatThrownBy(() -> service.judgeBatch(List.of(PLACE), List.of(GONE)))
+                .isInstanceOfSatisfying(CustomException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(VerdictErrorCode.POLICY_UNAVAILABLE));
     }
 
     @Test
