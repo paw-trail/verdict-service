@@ -110,7 +110,7 @@ class VerdictServiceTest {
         assertThat(summary.hasConflict()).isEqualTo(true);
         assertThat(summary.verdicts()).extracting(PetVerdictValue::verdict)
                 .containsExactly(Verdict.ALLOWED, Verdict.NOT_ALLOWED);
-        assertThat(summary.evidenceSummary()).isEqualTo("소형견만 출입 허용");
+        assertThat(summary.evidenceSummary()).isEqualTo("크기 제한: 소형견만 출입 허용");
         assertThat(summary.requiredItems()).containsExactly("목줄", "배변봉투");
     }
 

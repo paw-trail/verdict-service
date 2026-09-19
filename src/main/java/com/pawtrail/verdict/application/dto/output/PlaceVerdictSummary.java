@@ -14,7 +14,7 @@ import java.util.UUID;
  * @param placeId         장소 식별자
  * @param hasConflict     조건이 갈린 장소인지 — 판정과 따로 배지로 알림
  * @param verdicts        마리별 판정 — 요청 순서 그대로
- * @param evidenceSummary 카드 한 줄 근거 — 제한이 가장 센 마리 기준의 원문 근거
+ * @param evidenceSummary 카드 한 줄 근거 — 제한이 가장 센 마리 기준 · "칸 이름: 원문 근거"
  * @param requiredItems   준비물 — 장소마다 하나 · 비어 있을 수 있으나 null 은 아님
  */
 public record PlaceVerdictSummary(
